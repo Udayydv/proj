@@ -3,18 +3,18 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const serverless = require('serverless-http'); // 🔥 important for Vercel
 
-// Load environment variables
 dotenv.config();
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static files for uploads
+// Static folder (for uploads)
 app.use('/uploads', express.static('uploads'));
 
 // Routes
@@ -27,26 +27,25 @@ app.use('/api/enroll', require('./routes/enrollment'));
 app.use('/api/progress', require('./routes/progress'));
 app.use('/api/certificates', require('./routes/certificates'));
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://kumarshah7755_db_user:7CbupWHX0PM1CASc@cluster0.4ql28ug.mongodb.net/microcourse?retryWrites=true&w=majority&appName=Cluster0', {
+// MongoDB Connection
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('MongoDB connection error:', err));
+.then(() => console.log('✅ Connected to MongoDB'))
+.catch(err => console.error('❌ MongoDB Error:', err));
 
-// Health check endpoint
+// Health check route
 app.get('/api/health', (req, res) => {
-  res.json({ message: 'API is working!', status: 'OK' });
+  res.json({ status: 'OK', message: 'API is running fine ✅' });
 });
 
-// For Vercel deployment, export the app
-if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-  module.exports = app;
-} else {
-  // For local development, start the server
+// 🧩 Export app for Vercel
+module.exports = app;
+module.exports.handler = serverless(app);
+
+// 💻 For local dev only
+if (!process.env.VERCEL) {
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+  app.listen(PORT, () => console.log(`🚀 Local server running on port ${PORT}`));
 }
